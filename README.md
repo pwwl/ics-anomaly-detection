@@ -2,7 +2,7 @@
 
 This repository contains code related to "Perspectives from a Comprehensive Evaluation of Reconstruction-based Anomaly Detection in Industrial Control Systems", to appear in [ESORICS 2022](https://esorics2022.compute.dtu.dk/). 
 
-## Cite this work
+## Cite This Work
 
     @inproceedings{fung22-ics-anomaly-detection,
       title =        {Perspectives from a comprehensive evaluation of reconstruction-based anomaly detection in industrial control systems},
@@ -19,8 +19,8 @@ This repository contains code related to "Perspectives from a Comprehensive Eval
 This project uses python3 and tensorflow.
 The best way to get set up quickly is through a python virtual environment (like virtualenv).
 
-Start up a virtual environment and activate it:
-`virtualenv -p python3 venv`
+Start up a virtual environment and activate it:  
+`virtualenv -p python3 venv`  
 `source venv/bin/activate`
 
 And install the needed requirements.
@@ -38,8 +38,8 @@ For instructions on how to setup and process the raw datasets, see the associate
 ### Running
 
 There are three main scripts:
-`main_train.py` trains anomaly detection models.
-`main_eval.py` evaluates anomaly detection models.
-`main_model_tuning.py` performs threshold tuning based on a given metric.
+- `main_train.py` trains anomaly detection models.
+- `main_eval.py` evaluates anomaly detection models.
+- `main_model_tuning.py` performs threshold tuning based on a given metric.
 
 
