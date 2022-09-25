@@ -35,11 +35,12 @@ The SWaT and WADI datasets need to be requested through the [iTrust website](htt
 
 For instructions on how to setup and process the raw datasets, see the associated READMEs in the `data` directory.
 
-### Running
+### Running 
 
 There are three main scripts:
 - `main_train.py` trains anomaly detection models.
 - `main_eval.py` evaluates anomaly detection models.
 - `main_model_tuning.py` performs threshold tuning based on a given metric.
 
+**This README is still under construction.**
 
