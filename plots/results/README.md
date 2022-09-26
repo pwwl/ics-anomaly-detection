@@ -1,1 +1,1 @@
-This is the default directory for plotting outputs.
+The default experiment tag is `results`, so this is the default directory for plotting outputs.
