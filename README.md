@@ -52,6 +52,9 @@ There are three main scripts:
 
 Each of the above scripts uses the argument `--run_name` as a tag for experiments. This ensures that files are not written over when repeating experiments with the same parameters. Each tag must have an associated subdirectory named in the `outputs`, `plots`, and `models` directories. A helper script `setup_run_name.sh` is provided for easy setup.
 
+For example:
+> `bash setup_run_name.sh example1`
+
 #### Training the model
 
 Example of basic usage: 
