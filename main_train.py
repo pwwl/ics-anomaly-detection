@@ -277,7 +277,7 @@ def parse_arguments():
     parser.add_argument("--detect_params_test_split",
         default=0.7,
         type=float,
-        help="Split for testing/validation of detection hyperparameters. Default is 0.7 (hyperparameters evaluated on 30% of test data, final testing on 70%.) ")
+        help="Split for testing/validation of detection hyperparameters. Default is 0.7 (hyperparameters evaluated on 30%% of test data, final testing on 70%%.) ")
 
     # saving items
     parser.add_argument("--detect_params_plots",
@@ -344,7 +344,6 @@ if __name__ == "__main__":
 
     # Trains and returns the inner event detection model
     event_detector = train_model(model_type, config, Xtrain, Xval, dataset_name)
-    save_model(event_detector, config, run_name=run_name)
     
     # Search for the best tuning of the window and theta parameters
     hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name,
@@ -352,5 +351,7 @@ if __name__ == "__main__":
         run_name=run_name,
         save=False,
         verbose=0)
+
+    save_model(event_detector, config, run_name=run_name)
 
     print("Finished!")

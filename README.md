@@ -66,9 +66,10 @@ For a full list of available commands, use the `--help` argument.
 #### Evaluating the model
 
 Example of basic usage: 
-> `python3 main_eval.py AE BATADAL --run_name example1 --ae_model_params_layers 3 --ae_model_params_cf 3`
+> `python3 main_eval.py AE BATADAL --run_name example1 --ae_model_params_layers 3 --ae_model_params_cf 3 --detect_params_windows 1 3 5 10 --detect_params_percentile 0.95 0.99 0.995`
 
-Running the above command will tune the threshold (by calculating the percentile error on the validation dataset) and window length for the previously trained autoencoder over a set of default values.    
+Running the above command will tune the threshold (by calculating the percentile error on the validation dataset) and window length for the previously trained autoencoder over the given set of values.  
+In this example, each combination of window size and percentile will be compared (12 configurations).  
 For a full list of available commands, use the `--help` argument.
 
 #### Tuning the model

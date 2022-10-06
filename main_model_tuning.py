@@ -168,7 +168,7 @@ def parse_arguments():
     
     parser = utils.get_argparser()
 
-    # Hyperparameters
+    # Detection hyperparameter search
     parser.add_argument("--detect_params_percentile", 
         default=[0.95, 0.96, 0.97, 0.98, 0.99, 0.991, 0.992, 0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.999, 0.9995, 0.99995],
         nargs='+',
@@ -179,6 +179,8 @@ def parse_arguments():
         nargs='+',
         type=int,
         help="Windows to look over")
+
+    # Choice of metric
     parser.add_argument("--detect_params_hp_metrics", 
         default=['F1'],
         nargs='+',
@@ -192,7 +194,7 @@ def parse_arguments():
     parser.add_argument("--detect_params_test_split", 
         default=0.7,
         type=float,
-        help="Split for testing/validation of detection hyperparameters. Default is 0.7 (hyperparameters evaluated on 30% of test data, final testing on 70%.) ")
+        help="Split for testing/validation of detection hyperparameters. Default is 0.7 (hyperparameters evaluated on 30%% of test data, final testing on 70%%.) ")
     
     return parser.parse_args()
 

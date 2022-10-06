@@ -109,7 +109,6 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
     else:
 
         fig, ax = plt.subplots(len(eval_config), figsize=(20, 4 * len(eval_config)))
-        all_Yhats = []
 
         for i in range(len(eval_config)):
 
@@ -122,17 +121,12 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
                 ax[i].set_title(f'Detection trajectory on test dataset, percentile={percentile}, window={window}', fontsize = 36)
                 Yhat, Ytest = eval_test(event_detector, model_type, val_errors, test_errors, Ytest, eval_metrics, percentile=percentile, window=window)
 
-            all_Yhats.append(Yhat)
-
             ax[i].plot(-1 * Yhat, color = '0.25', label = 'Predicted')
             ax[i].plot(Ytest, color = 'lightcoral', alpha = 0.75, lw = 2, label = 'True Label')
             ax[i].fill_between(np.arange(len(Yhat)), -1 * Yhat, 0, color = '0.25')
             ax[i].fill_between(np.arange(len(Ytest)), 0, Ytest, color = 'lightcoral')
             ax[i].set_yticks([-1,0,1])
             ax[i].set_yticklabels(['Predicted','Benign','Attacked'])
-
-        pickle.dump(all_Yhats, open(f'{model_name}-eval-Yhats.pkl', 'wb'))
-        print('Dumped to pkl.')
 
     plt.tight_layout(rect=[0, 0, 1, 0.925])
     plt.savefig(f'{model_name}-compare.pdf')
@@ -224,6 +218,23 @@ def parse_arguments():
             type=str,
             help="Metrics to look over")
 
+    # Detection hyperparameter search
+    parser.add_argument("--detect_params_percentile", 
+        default=[0.95, 0.96, 0.97, 0.98, 0.99, 0.991, 0.992, 0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.999, 0.9995, 0.99995],
+        nargs='+',
+        type=float,
+        help="Percentiles to look over")
+
+    parser.add_argument("--detect_params_windows", 
+        default=[1, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        nargs='+',
+        type=int,
+        help="Windows to look over")
+
+    parser.add_argument("--eval_plots",
+        action='store_true',
+        help="Make detection plots for provided hyperparameter settings")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -233,6 +244,7 @@ if __name__ == "__main__":
     dataset_name = args.dataset
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = '1'
 
     # Generic evaluation settings
     config = {
@@ -247,7 +259,6 @@ if __name__ == "__main__":
     Xtest, Ytest, _ = load_test_data(dataset_name)
 
     event_detector = load_saved_model(model_type, f'models/{run_name}/{model_name}.json', f'models/{run_name}/{model_name}.h5')
-
     do_batches = False
 
     if not model_type == 'AE':
@@ -264,28 +275,20 @@ if __name__ == "__main__":
     validation_instance_errors = validation_errors.mean(axis=1)
     test_instance_errors = test_errors.mean(axis=1)
 
-    default_cutoffs = [0.95, 0.96, 0.97, 0.98, 0.99, 0.991, 0.992, 0.993, 0.994, 0.995, 0.996, 0.997, 0.998, 0.999, 0.9995, 0.99995]
-    default_windows = [1, 3, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    bestp, bestw = hyperparameter_eval(event_detector,
+        model_type,
+        config,
+        validation_instance_errors,
+        test_instance_errors,
+        Ytest,
+        eval_metrics=args.detect_params_metrics,
+        cutoffs=args.detect_params_percentile,
+        windows=args.detect_params_windows,
+        run_name=run_name)
 
-    hyper = True
-    plot = False
+    if args.eval_plots:
 
-    if hyper:
-
-        bestp, bestw = hyperparameter_eval(event_detector,
-            model_type,
-            config,
-            validation_instance_errors,
-            test_instance_errors,
-            Ytest,
-            eval_metrics=args.detect_params_metrics,
-            cutoffs=default_cutoffs,
-            windows=default_windows,
-            run_name=run_name)
-
-    if plot:
-
-        # Trains and returns the inner event detection model
+        # Makes a plot of the "best" setting. Additional settings can be included in the config.
         eval_demo(event_detector,
             model_type,
             config,
@@ -294,6 +297,6 @@ if __name__ == "__main__":
             Ytest,
             eval_metrics=args.detect_params_metrics,
             run_name=run_name,
-            include_best=False)
+            include_best=True)
 
     print("Finished!")
