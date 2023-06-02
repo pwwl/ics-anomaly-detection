@@ -16,22 +16,28 @@
 
 """
 
-import pdb
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("SWaT_Dataset_Normal_v1.csv", header=0)
+df_temp = pd.read_csv("SWaT_Dataset_Normal_v1.csv", header=0)
+temp_columns = df_temp.columns.tolist()
+# if first row is blank/not column names
+if temp_columns[0] != "Timestamp" or temp_columns[0] != " Timestamp":
+  df = pd.read_csv("SWaT_Dataset_Normal_v1.csv", header=1)
+else:
+  df = df_temp
 df_test = pd.read_csv("SWaT_Dataset_Attack_v0.csv", header=0)
+
+# Eliminate spaces from column names (namely from " Timestamp" and other random columns)
+df.columns = df.columns.str.replace(' ', '')
+df_test.columns = df.columns.str.replace(' ', '')
 
 df_test['Normal/Attack'] = df_test['Normal/Attack'] != 'Normal'
 df['Normal/Attack'] = False
 
 ytest = df_test['Normal/Attack'].values
 attack_idx = 0
-print(len(ytest))
 real_ytest = np.zeros(len(ytest))
-
-
 
 real_ytest[1738:2673] = 1  # Attack 0 (1 in Doc) on MV101
 real_ytest[3046:3491] = 1  # Attack 1 (2 in Doc) on P102
@@ -82,10 +88,10 @@ ytest = df_test['Normal/Attack'].values
 for i in np.arange(len(df_test)):
                 
   if (ytest[i] and i == 0) or (ytest[i] and not ytest[i-1]):
-    print(f"Attack {attack_idx} start at {i}: {df_test[' Timestamp'][i]}")
+    print(f"Attack {attack_idx} start at {i}: {df_test['Timestamp'][i]}")
 
   if (ytest[i] and i == (len(df_test) - 1)) or (ytest[i] and not ytest[i+1]):
-    print(f"Attack {attack_idx} end at {i}: {df_test[' Timestamp'][i]}")
+    print(f"Attack {attack_idx} end at {i}: {df_test['Timestamp'][i]}")
     attack_idx += 1
 
 df.to_csv('SWATv0_train.csv', index=False)
