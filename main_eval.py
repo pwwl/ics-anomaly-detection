@@ -129,7 +129,7 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
             ax[i].set_yticklabels(['Predicted','Benign','Attacked'])
 
     plt.tight_layout(rect=[0, 0, 1, 0.925])
-    plt.savefig(f'{model_name}-compare.pdf')
+    plt.savefig(f'plots/{run_name}/{model_name}-compare.pdf')
 
 
 def hyperparameter_eval(event_detector, model_type, config, val_errors, test_errors, Ytest,
