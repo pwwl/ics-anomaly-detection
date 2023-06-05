@@ -15,5 +15,5 @@
 | 14 | (Stop chem dosing to war water)<br>(1_P_001 & 1_P_003?) | 10/11/17<br>12:16:00 | 10/11/17<br>12:25:36 | 10/11/17<br>12:16:07 | 10/11/17<br>12:25:46 | +7s/+10s |
 | 15 | 2_LIT_002<br>1_AIT_001 | 10/11/17<br>15:26:30 | 10/11/17<br>15:37:00 | 10/11/17<br>15:26:30* | 10/11/17<br>15:37:00* | 0s/0s |
 
-*No corrections made because unable to find change in data correlating to attack descriptions
+*No corrections made because unable to find change in data correlating to attack descriptions<br>
 **Believed to be a typo that is supposed to be 10/11/17
