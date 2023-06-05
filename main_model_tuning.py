@@ -224,7 +224,7 @@ if __name__ == "__main__":
     Xtrain, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
     Ytest = Ytest.astype(int)
-    event_detector = load_saved_model(model_type, f'models/{run_name}/{model_name}.json', f'models/{run_name}/{model_name}.h5')
+    event_detector = load_saved_model(model_type, run_name, model_name)
 
     do_batches = False
     Xtest_val, Xtest_test, Ytest_val, Ytest_test = utils.custom_train_test_split(dataset_name, Xtest, Ytest, test_size=test_split, shuffle=False)
@@ -272,7 +272,12 @@ if __name__ == "__main__":
 
         overall_values.append({hp_metric : final_values})
 
-    np.save(f'outputs/{run_name}/{model_name}-model-tuning-scores.npy', overall_values)
-    print(f'Saved {run_name}/{model_name}-model-tuning-scores.npy')
+    try:
+        np.save(f'outputs/{run_name}/{model_name}-model-tuning-scores.npy', overall_values)
+        print(f'Saved output to {run_name}/{model_name}-model-tuning-scores.npy')
+    except FileNotFoundError:
+        np.save(f'outputs/results/{model_name}-model-tuning-scores.npy', overall_values)
+        print(f"Unable to find outputs/{run_name}/, saving to outputs/results/{model_name}-model-tuning-scores.npy")
+        print(f"Note: we recommend creating outputs/{run_name}/ to store this output")
 
     print("Finished!")

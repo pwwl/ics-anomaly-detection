@@ -76,8 +76,7 @@ def train_model(model_type, config, Xtrain, Xval, dataset_name=None):
     elif model_type == 'ID':
         event_detector = identity.Identity(**model_params)
     else:
-        print(f'Model type {model_type} is not supported.')
-        return
+        raise SystemExit(f'Model type {model_type} is not supported.')
 
     event_detector.create_model()    
     event_detector.train(Xtrain,
@@ -113,6 +112,9 @@ def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest
     cutoffs = grid_config.get('percentile', [0.95])
     windows = grid_config.get('window', [1])
     eval_metrics = grid_config.get('metrics', ['F1'])
+
+    firstPlotsError = True
+    firstNpysError = True
 
     for metric in eval_metrics:
 
@@ -178,7 +180,13 @@ def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest
                     ax_detect.set_yticks([0,1])
                     ax_detect.set_yticklabels(['NO ATTACK','ATTACK'])
                     ax_detect.legend(fontsize = 12, loc = 2)
-                    fig_detect.savefig(f'plots/{run_name}/{model_name}-{percentile}-{window}.pdf')
+                    try:
+                        fig_detect.savefig(f'plots/{run_name}/{model_name}-{percentile}-{window}.pdf')
+                    except FileNotFoundError:
+                        fig_detect.savefig(f'plots/results/{model_name}-{percentile}-{window}.pdf')
+                        if firstPlotsError:
+                            print(f"Directory plots/{run_name}/ not found, saved to plots/results/ instead.")
+                            firstPlotsError = False
                     plt.close(fig_detect)
 
             if save:
@@ -202,25 +210,48 @@ def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest
         print("Final {} is {:.3f} at percentile={:.5f}, window {}".format(metric, final_value, best_percentile, best_window))
 
         if grid_config.get('save-metric-info', False):
-            np.save(f'npys/{run_name}/{model_name}-{metric}.npy', metric_vals)
-            print(f'Saved metric at npys/{run_name}/{model_name}-{metric}.npy')
+            try:
+                np.save(f'npys/{run_name}/{model_name}-{metric}.npy', metric_vals)
+                print(f'Saved metric at npys/{run_name}/{model_name}-{metric}.npy')
+            except FileNotFoundError:
+                np.save(f'npys/results/{model_name}-{metric}.npy', metric_vals)
+                if firstPlotsError:
+                    print(f"Directory npys/{run_name}/ not found, saved metric at npys/{run_name}/{model_name}-{metric}.npy")
+                    firstPlotsError = False
 
     return event_detector
 
 def save_model(event_detector, config, run_name='results'):
     model_name = config['name']
-    event_detector.save(f'models/{run_name}/{model_name}')
+    try:
+        event_detector.save(f'models/{run_name}/{model_name}')
+    except FileNotFoundError:
+        event_detector.save(f'models/results/{model_name}')
+        print(f"Directory models/{run_name}/ not found, model saved at models/results/ instead")
+        print(f"Note: we recommend creating models/{run_name}/ to store this model")
 
 # functions
-def load_saved_model(model_type, params_filename, model_filename):
+def load_saved_model(model_type, run_name, model_name):
     """ Load stored model. """
 
     if model_type == 'ID':
         return identity.Identity()
 
     # load params and create event detector
-    with open(params_filename) as fd:
-        model_params = json.load(fd)
+    try:
+        with open(f"models/{run_name}/{model_name}.json") as fd:
+            model_params = json.load(fd)
+        model_filename = f"models/{run_name}/{model_name}.h5"
+    except FileNotFoundError:
+        print(f"Unable to find models/{run_name}/{model_name}.json, checking models/results/...")
+        try:
+            with open(f"models/results/{model_name}.json") as fd:
+                model_params = json.load(fd)
+            print(f"Using {model_name}.json and {model_name}.h5 found in models/results/")
+            print("Note: we recommend separate directories to avoid writing over experiments")
+            model_filename = f"models/results/{model_name}.h5"
+        except FileNotFoundError:
+            raise SystemExit(f"Unable to find {model_name}.json")
 
     if model_type == 'AE':
         event_detector = autoencoder.AEED(**model_params)
@@ -233,8 +264,7 @@ def load_saved_model(model_type, params_filename, model_filename):
     elif model_type == 'LIN':
         event_detector = linear.Linear(**model_params)
     else:
-        print(f'Model type {model_type} is not supported.')
-        return None
+        raise SystemExit(f'Model type {model_type} is not supported.')
 
     # load keras model
     event_detector.inner = load_model(model_filename)

@@ -129,7 +129,13 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
             ax[i].set_yticklabels(['Predicted','Benign','Attacked'])
 
     plt.tight_layout(rect=[0, 0, 1, 0.925])
-    plt.savefig(f'plots/{run_name}/{model_name}-compare.pdf')
+    try:
+        plt.savefig(f'plots/{run_name}/{model_name}-compare.pdf')
+        print(f"Saved plot to plots/{run_name}/{model_name}-compare.pdf")
+    except FileNotFoundError:
+        plt.savefig(f'plots/results/{model_name}-compare.pdf')
+        print(f"Unable to find plots/{run_name}/, saved to plots/results/{model_name}-compare.pdf")
+        print(f"Note: we recommend creating plots/{run_name}/ to store this plot")
 
 
 def hyperparameter_eval(event_detector, model_type, config, val_errors, test_errors, Ytest,
@@ -200,8 +206,13 @@ def hyperparameter_eval(event_detector, model_type, config, val_errors, test_err
         final_Yhat_trunc, Ytest_trunc = utils.normalize_array_length(final_Yhat, Ytest)
         final_value = metric_func(final_Yhat_trunc, Ytest_trunc)
 
-        np.save(f'outputs/{run_name}/{model_name}-{metric}.npy', metric_vals)
-        print(f'Saved {run_name}/{model_name}-{metric}.npy')
+        try:
+            np.save(f'outputs/{run_name}/{model_name}-{metric}.npy', metric_vals)
+            print(f'Saved output to outputs/{run_name}/{model_name}-{metric}.npy')
+        except FileNotFoundError:
+            np.save(f'outputs/results/{model_name}-{metric}.npy', metric_vals)
+            print(f"Unable to find outputs/{run_name}/, saving to outputs/results/{model_name}-{metric}.npy")
+            print(f"Note: we recommend creating outputs/{run_name}/ to store this output")
 
         print("Final {} is {:.3f} at percentile={:.5f}, window {}".format(metric, final_value, best_percentile, best_window))
         config['eval'].append({'percentile': best_percentile, 'window': best_window})
@@ -258,7 +269,7 @@ if __name__ == "__main__":
     _, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
 
-    event_detector = load_saved_model(model_type, f'models/{run_name}/{model_name}.json', f'models/{run_name}/{model_name}.h5')
+    event_detector = load_saved_model(model_type, run_name, model_name)
     do_batches = False
 
     if not model_type == 'AE':
