@@ -85,7 +85,7 @@ def train_model(model_type, config, Xtrain, Xval, dataset_name=None):
 
     return event_detector
 
-def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name, save=True, test_split=0.7, run_name='results', verbose=1):
+def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name, test_split=0.7, run_name='results', verbose=1):
 
     model_name = config['name']
     do_batches = False
@@ -182,16 +182,23 @@ def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest
                     ax_detect.legend(fontsize = 12, loc = 2)
                     try:
                         fig_detect.savefig(f'plots/{run_name}/{model_name}-{percentile}-{window}.pdf')
+                        if firstPlotsError:
+                            print(f"Saving plots for model {model_name} to plots/{run_name}")
+                            firstPlotsError = False
                     except FileNotFoundError:
                         fig_detect.savefig(f'plots/results/{model_name}-{percentile}-{window}.pdf')
                         if firstPlotsError:
-                            print(f"Directory plots/{run_name}/ not found, saved to plots/results/ instead.")
+                            print(f"Directory plots/{run_name}/ not found, saving plots for model {model_name} to plots/results/ instead")
                             firstPlotsError = False
                     plt.close(fig_detect)
 
-            if save:
-                pickle.dump(theta, open(f'models/{run_name}/{model_name}-{percentile}-theta.pkl', 'wb'))
-                print('Saved theta parameter to {0}.'.format('theta.pkl'))
+            if grid_config.get('save-theta', False):
+                try:
+                    pickle.dump(theta, open(f'models/{run_name}/{model_name}-{percentile}-theta.pkl', 'wb'))
+                    print(f'Saved theta to models/{run_name}/{model_name}-{percentile}-theta.pkl')
+                except FileNotFoundError:
+                    pickle.dump(theta, open(f'models/results/{model_name}-{percentile}-theta.pkl', 'wb'))
+                    print(f"Directory models/{run_name}/ not found, saved theta to models/results/{model_name}-{percentile}-theta.pkl instead")
 
         print("Best metric ({}) is {:.3f} at percentile={:.5f}, window {}".format(metric, best_metric, best_percentile, best_window))
 
@@ -216,7 +223,7 @@ def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest
             except FileNotFoundError:
                 np.save(f'npys/results/{model_name}-{metric}.npy', metric_vals)
                 if firstPlotsError:
-                    print(f"Directory npys/{run_name}/ not found, saved metric at npys/{run_name}/{model_name}-{metric}.npy")
+                    print(f"Directory npys/{run_name}/ not found, saved metric {model_name}-{metric}.npy to npys/results/ instead")
                     firstPlotsError = False
 
     return event_detector
@@ -227,7 +234,7 @@ def save_model(event_detector, config, run_name='results'):
         event_detector.save(f'models/{run_name}/{model_name}')
     except FileNotFoundError:
         event_detector.save(f'models/results/{model_name}')
-        print(f"Directory models/{run_name}/ not found, model saved at models/results/ instead")
+        print(f"Directory models/{run_name}/ not found, model {model_name} saved at models/results/ instead")
         print(f"Note: we recommend creating models/{run_name}/ to store this model")
 
 # functions
@@ -251,7 +258,7 @@ def load_saved_model(model_type, run_name, model_name):
             print("Note: we recommend separate directories to avoid writing over experiments")
             model_filename = f"models/results/{model_name}.h5"
         except FileNotFoundError:
-            raise SystemExit(f"Unable to find {model_name}.json")
+            raise SystemExit(f"Unable to find model {model_name}. Ensure you have trained the model first")
 
     if model_type == 'AE':
         event_detector = autoencoder.AEED(**model_params)
@@ -316,6 +323,9 @@ def parse_arguments():
     parser.add_argument("--detect_params_save_npy",
         action='store_true',
         help="Save the metric values in an npy")
+    parser.add_argument("--detect_params_save_theta",
+        action='store_true',
+        help="Save theta thresholds in a pkl")
 
     return parser.parse_args()
 
@@ -352,7 +362,8 @@ if __name__ == "__main__":
             'metrics': args.detect_params_metrics,
             'pr-plot': False,
             'detection-plots': args.detect_params_plots,
-            'save-metric-info': args.detect_params_save_npy
+            'save-metric-info': args.detect_params_save_npy,
+            'save-theta': args.detect_params_save_theta
         }
     }
 
@@ -379,7 +390,6 @@ if __name__ == "__main__":
     hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name,
         test_split=test_split,
         run_name=run_name,
-        save=False,
         verbose=0)
 
     save_model(event_detector, config, run_name=run_name)

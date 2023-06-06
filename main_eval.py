@@ -131,10 +131,10 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
     plt.tight_layout(rect=[0, 0, 1, 0.925])
     try:
         plt.savefig(f'plots/{run_name}/{model_name}-compare.pdf')
-        print(f"Saved plot to plots/{run_name}/{model_name}-compare.pdf")
+        print(f"Saved plot {model_name}-compare.pdf to plots/{run_name}/")
     except FileNotFoundError:
         plt.savefig(f'plots/results/{model_name}-compare.pdf')
-        print(f"Unable to find plots/{run_name}/, saved to plots/results/{model_name}-compare.pdf")
+        print(f"Unable to find plots/{run_name}/, saved {model_name}-compare.pdf to plots/results/")
         print(f"Note: we recommend creating plots/{run_name}/ to store this plot")
 
 
@@ -208,10 +208,10 @@ def hyperparameter_eval(event_detector, model_type, config, val_errors, test_err
 
         try:
             np.save(f'outputs/{run_name}/{model_name}-{metric}.npy', metric_vals)
-            print(f'Saved output to outputs/{run_name}/{model_name}-{metric}.npy')
+            print(f'Saved {model_name}-{metric}.npy to outputs/{run_name}/')
         except FileNotFoundError:
             np.save(f'outputs/results/{model_name}-{metric}.npy', metric_vals)
-            print(f"Unable to find outputs/{run_name}/, saving to outputs/results/{model_name}-{metric}.npy")
+            print(f"Unable to find outputs/{run_name}/, saved {model_name}-{metric}.npy to outputs/results/")
             print(f"Note: we recommend creating outputs/{run_name}/ to store this output")
 
         print("Final {} is {:.3f} at percentile={:.5f}, window {}".format(metric, final_value, best_percentile, best_window))
