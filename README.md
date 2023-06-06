@@ -20,12 +20,15 @@ This project uses Python3 and Tensorflow, which requires 64-bit Python 3.8-3.11.
 For compatibility with required packages, we recommend using any installment of 64-bit Python 3.8.x. 
 The best way to get set up quickly is through a Python virtual environment (like virtualenv).
 Here is [a detailed guide](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-packages-using-pip-and-virtual-environments) to installing virtualenv through pip, and using virtualenv to setup a Python virtual environment.
+We recommend using virtualenv and not venv so that a virtual environment with a specific Python version can be created, as shown below.
 
 For Unix/macOS users to start up a virtual environment and activate it:  
 ```sh
-virtualenv -p python3 venv  
+virtualenv -p python3.8.5 venv  
 source venv/bin/activate
 ```
+Importantly, be sure to specify the Python version with the `-p` flag.
+Note: In order to create a Python virtual environment of a specific version, the host environment must also have that specific version installed.
 
 Once in the virtual environment, install the needed requirements:
 ```sh

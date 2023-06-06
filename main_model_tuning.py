@@ -151,6 +151,7 @@ def hyperparameter_eval(event_detector, model_name, config, validation_errors, X
         ax.fill_between(np.arange(len(Ytest_test)), 0, Ytest_test, color = 'lightcoral')
         ax.set_yticks([-1,0,1])
         ax.set_yticklabels(['Predicted','Benign','Attacked'])
+        ax.set_title(f'Detection trajectory, best percentile={best_percentile}, best window={best_window}', fontsize = 36)
         fig.tight_layout()
         try:
             plt.savefig(f'plots/{run_name}/{model_name}-{best_percentile}-{best_window}.pdf')

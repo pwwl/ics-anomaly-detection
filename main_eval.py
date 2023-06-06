@@ -74,6 +74,7 @@ def eval_test(event_detector, model_type, val_errors, test_errors, Ytest, eval_m
         ax.fill_between(np.arange(len(Ytest_trunc)), 0, Ytest_trunc, color = 'lightcoral')
         ax.set_yticks([-1,0,1])
         ax.set_yticklabels(['Predicted','Benign','Attacked'])
+        ax.set_title(f'Detection trajectory theta={used_theta}, metric={final_value}, percentile={percentile}, window={used_window}', fontsize = 36)
         fig.savefig(f'eval-detection.pdf')
 
     return Yhat_trunc, Ytest_trunc
