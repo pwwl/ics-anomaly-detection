@@ -60,12 +60,14 @@ def eval_test(event_detector, model_type, val_errors, test_errors, Ytest, eval_m
 
         metric_func = metrics.get(metric)
         final_value = metric_func(Yhat_trunc, Ytest_trunc)
-        print(f'At theta={used_theta}, window={used_window}, {metric}={final_value}')
+        if best:
+            print(f'Best: At theta={used_theta}, window={used_window}, {metric}={final_value}')
+        else:
+            print(f'At theta={used_theta}, window={used_window}, {metric}={final_value}')
 
+    # for debugging purposes
     if plot:
-
         fig, ax = plt.subplots(figsize=(20, 4))
-
         ax.plot(-1 * Yhat_trunc, color = '0.25', label = 'Predicted')
         ax.plot(Ytest_trunc, color = 'lightcoral', alpha = 0.75, lw = 2, label = 'True Label')
         ax.fill_between(np.arange(len(Yhat_trunc)), -1 * Yhat_trunc, 0, color = '0.25')
