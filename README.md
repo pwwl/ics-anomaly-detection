@@ -45,7 +45,7 @@ For instructions on how to setup and process the raw datasets, see the associate
 
 Some recent experiments and prior work have suggested using the Kolmogorov-Smirnov test to filter out and remove features whose train-test distributions vary significantly. This technique was proposed for the SWAT dataset in Section V of this ArXiv paper and has been locally implemented in `main_data_cleaning.py`.
 
-To use the cleaned versions of the `SWAT` and `WADI` datasets, we have added dataset names `SWAT-CLEAN` and `WADI-CLEAN`, which will remove the features specified by the Kolmogorov-Smirnov test from the processed `SWAT` and `WADI` datasets. Specify these new dataset names when training, evaluating, and tuning models, as seen below.
+To use the cleaned versions of the `SWAT` and `WADI` datasets, we have added dataset names `SWAT-CLEAN` and `WADI-CLEAN`. These will remove the features specified by the Kolmogorov-Smirnov test from the processed `SWAT` and `WADI` datasets. Specify these new dataset names when training, evaluating, and tuning models, as seen below.
 
 ### Example Workflow 
 
