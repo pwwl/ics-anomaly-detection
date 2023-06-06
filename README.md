@@ -24,7 +24,7 @@ We recommend using virtualenv and not venv so that a virtual environment with a 
 
 For Unix/macOS users to start up a virtual environment and activate it:  
 ```sh
-virtualenv -p python3.8.5 venv  
+virtualenv -p python3.8 venv  
 source venv/bin/activate
 ```
 Importantly, be sure to specify the Python version with the `-p` flag.
