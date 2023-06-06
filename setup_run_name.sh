@@ -3,4 +3,4 @@
 mkdir outputs/$1
 mkdir plots/$1
 mkdir models/$1
-
+mkdir npys/$1
