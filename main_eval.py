@@ -60,18 +60,21 @@ def eval_test(event_detector, model_type, val_errors, test_errors, Ytest, eval_m
 
         metric_func = metrics.get(metric)
         final_value = metric_func(Yhat_trunc, Ytest_trunc)
-        print(f'At theta={used_theta}, window={used_window}, {metric}={final_value}')
+        if best:
+            print(f'Best: At theta={used_theta}, window={used_window}, {metric}={final_value}')
+        else:
+            print(f'At theta={used_theta}, window={used_window}, {metric}={final_value}')
 
+    # for debugging purposes
     if plot:
-
         fig, ax = plt.subplots(figsize=(20, 4))
-
         ax.plot(-1 * Yhat_trunc, color = '0.25', label = 'Predicted')
         ax.plot(Ytest_trunc, color = 'lightcoral', alpha = 0.75, lw = 2, label = 'True Label')
         ax.fill_between(np.arange(len(Yhat_trunc)), -1 * Yhat_trunc, 0, color = '0.25')
         ax.fill_between(np.arange(len(Ytest_trunc)), 0, Ytest_trunc, color = 'lightcoral')
         ax.set_yticks([-1,0,1])
         ax.set_yticklabels(['Predicted','Benign','Attacked'])
+        ax.set_title(f'Detection trajectory theta={used_theta}, metric={final_value}, percentile={percentile}, window={used_window}', fontsize = 36)
         fig.savefig(f'eval-detection.pdf')
 
     return Yhat_trunc, Ytest_trunc
@@ -129,7 +132,13 @@ def eval_demo(event_detector, model_type, config, val_errors, test_errors, Ytest
             ax[i].set_yticklabels(['Predicted','Benign','Attacked'])
 
     plt.tight_layout(rect=[0, 0, 1, 0.925])
-    plt.savefig(f'{model_name}-compare.pdf')
+    try:
+        plt.savefig(f'plots/{run_name}/{model_name}-compare.pdf')
+        print(f"Saved plot {model_name}-compare.pdf to plots/{run_name}/")
+    except FileNotFoundError:
+        plt.savefig(f'plots/results/{model_name}-compare.pdf')
+        print(f"Unable to find plots/{run_name}/, saved {model_name}-compare.pdf to plots/results/")
+        print(f"Note: we recommend creating plots/{run_name}/ to store this plot")
 
 
 def hyperparameter_eval(event_detector, model_type, config, val_errors, test_errors, Ytest,
@@ -200,8 +209,13 @@ def hyperparameter_eval(event_detector, model_type, config, val_errors, test_err
         final_Yhat_trunc, Ytest_trunc = utils.normalize_array_length(final_Yhat, Ytest)
         final_value = metric_func(final_Yhat_trunc, Ytest_trunc)
 
-        np.save(f'outputs/{run_name}/{model_name}-{metric}.npy', metric_vals)
-        print(f'Saved {run_name}/{model_name}-{metric}.npy')
+        try:
+            np.save(f'outputs/{run_name}/{model_name}-{metric}.npy', metric_vals)
+            print(f'Saved {model_name}-{metric}.npy to outputs/{run_name}/')
+        except FileNotFoundError:
+            np.save(f'outputs/results/{model_name}-{metric}.npy', metric_vals)
+            print(f"Unable to find outputs/{run_name}/, saved {model_name}-{metric}.npy to outputs/results/")
+            print(f"Note: we recommend creating outputs/{run_name}/ to store this output")
 
         print("Final {} is {:.3f} at percentile={:.5f}, window {}".format(metric, final_value, best_percentile, best_window))
         config['eval'].append({'percentile': best_percentile, 'window': best_window})
@@ -258,7 +272,7 @@ if __name__ == "__main__":
     _, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
 
-    event_detector = load_saved_model(model_type, f'models/{run_name}/{model_name}.json', f'models/{run_name}/{model_name}.h5')
+    event_detector = load_saved_model(model_type, run_name, model_name)
     do_batches = False
 
     if not model_type == 'AE':

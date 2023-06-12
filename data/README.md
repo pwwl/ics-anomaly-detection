@@ -7,7 +7,10 @@ Enter any of the directories provided for a description on how to obtain and pro
 ### BATADAL
 
 For the BATADAL dataset, the smallest dataset and the one used in the demo, we have provided a tar file at `BATADAL.tar.gz`.
-Simply unpack this file with: `tar -xvf BATADAL.tar.gz`  
+Simply unpack this file with:
+```sh
+tar -xvf BATADAL.tar.gz
+```
 
 This dataset was collected from: https://www.batadal.net/data.html  
 We would like to thank and credit the authors of the dataset and its corresponding paper:

@@ -151,8 +151,13 @@ def hyperparameter_eval(event_detector, model_name, config, validation_errors, X
         ax.fill_between(np.arange(len(Ytest_test)), 0, Ytest_test, color = 'lightcoral')
         ax.set_yticks([-1,0,1])
         ax.set_yticklabels(['Predicted','Benign','Attacked'])
+        ax.set_title(f'Detection trajectory, best percentile={best_percentile}, best window={best_window}', fontsize = 36)
         fig.tight_layout()
-        plt.savefig(f'{model_name}-{best_percentile}-{best_window}.pdf')
+        try:
+            plt.savefig(f'plots/{run_name}/{model_name}-{best_percentile}-{best_window}.pdf')
+        except FileNotFoundError:
+            plt.savefig(f'plots/results/{model_name}-{best_percentile}-{best_window}.pdf')
+            print(f"Unable to find plots/{run_name}/, saved {model_name}-{best_percentile}-{best_window}.pdf to plots/results/ instead")
         plt.close()
 
         plot_obj = []
@@ -160,7 +165,12 @@ def hyperparameter_eval(event_detector, model_name, config, validation_errors, X
         plot_obj.append(Ytest_test)
 
         print(f'Dumping pkl object for {hp_metric}: {best_percentile} {best_window}')
-        pickle.dump(plot_obj, open(f'{model_name}-{hp_metric}-{best_percentile}-{best_window}.pkl', 'wb'))
+        try:
+            pickle.dump(plot_obj, open(f'outputs/{run_name}/{model_name}-{hp_metric}-{best_percentile}-{best_window}.pkl', 'wb'))
+            print(f'Saved {model_name}-{hp_metric}-{best_percentile}-{best_window}.pkl in outputs/{run_name}/')
+        except FileNotFoundError:
+            pickle.dump(plot_obj, open(f'outputs/results/{model_name}-{hp_metric}-{best_percentile}-{best_window}.pkl', 'wb'))
+            print(f"Unable to find outputs/{run_name}/, saved {model_name}-{hp_metric}-{best_percentile}-{best_window}.pkl to outputs/results/ instead")
 
     return final_values
 
@@ -195,7 +205,10 @@ def parse_arguments():
         default=0.7,
         type=float,
         help="Split for testing/validation of detection hyperparameters. Default is 0.7 (hyperparameters evaluated on 30%% of test data, final testing on 70%%.) ")
-    
+    parser.add_argument("--eval_plots",
+        action="store_true",
+        help="Make detection plots for hyperparameter settings")
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -224,7 +237,7 @@ if __name__ == "__main__":
     Xtrain, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
     Ytest = Ytest.astype(int)
-    event_detector = load_saved_model(model_type, f'models/{run_name}/{model_name}.json', f'models/{run_name}/{model_name}.h5')
+    event_detector = load_saved_model(model_type, run_name, model_name)
 
     do_batches = False
     Xtest_val, Xtest_test, Ytest_val, Ytest_test = utils.custom_train_test_split(dataset_name, Xtest, Ytest, test_size=test_split, shuffle=False)
@@ -267,12 +280,17 @@ if __name__ == "__main__":
             bestw,
             hp_metric,
             run_name=run_name,
-            plot=False, 
+            plot=args.eval_plots, 
             verbose=0)
 
         overall_values.append({hp_metric : final_values})
 
-    np.save(f'outputs/{run_name}/{model_name}-model-tuning-scores.npy', overall_values)
-    print(f'Saved {run_name}/{model_name}-model-tuning-scores.npy')
+    try:
+        np.save(f'outputs/{run_name}/{model_name}-model-tuning-scores.npy', overall_values)
+        print(f'Saved output to {run_name}/{model_name}-model-tuning-scores.npy')
+    except FileNotFoundError:
+        np.save(f'outputs/results/{model_name}-model-tuning-scores.npy', overall_values)
+        print(f"Unable to find outputs/{run_name}/, saved {model_name}-model-tuning-scores.npy to outputs/results/ instead")
+        print(f"Note: we recommend creating outputs/{run_name}/ to store this output")
 
     print("Finished!")
