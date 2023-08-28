@@ -1,6 +1,7 @@
 # ICS Anomaly Detection Test Suite
 
-This repository contains code related to "Perspectives from a Comprehensive Evaluation of Reconstruction-based Anomaly Detection in Industrial Control Systems", presented and published at [ESORICS 2022](https://esorics2022.compute.dtu.dk/). 
+This repository contains code related to "[Perspectives from a Comprehensive Evaluation of Reconstruction-based Anomaly Detection in Industrial Control Systems](https://www.ece.cmu.edu/~lbauer/papers/2022/esorics2022-ics-anomaly-detection.pdf)", 
+presented and published at [ESORICS 2022](https://esorics2022.compute.dtu.dk/). 
 
 ## Cite This Work
 
