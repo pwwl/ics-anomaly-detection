@@ -123,7 +123,7 @@ class GatedRecurrentUnit(ICSDetector):
         return np.array(data), np.array(labels)
 
     def train(self, x, use_callbacks=False, **train_params):
-        """ Train LSTM,
+        """ Train GRU,
 
             x: inputs (inputs == targets, We are training a self-supervised LSTM).
         """
@@ -162,6 +162,60 @@ class GatedRecurrentUnit(ICSDetector):
             train_params['validation_data'] = data_generator(x_val, batch_size)
 
         train_history = self.inner.fit(data_generator(x, batch_size), **train_params)
+        
+        # Save losses to CSV
+        if self.params['verbose'] > 0:        
+            loss_obj = np.vstack([train_history.history['loss'], train_history.history['val_loss']])
+            np.savetxt(f'gru-train-history-{self.params["layers"]}l-{self.params["units"]}u.csv', loss_obj, delimiter=',', fmt='%.5f')
+
+    def train_by_idx(self, Xfull, train_idxs, val_idxs, use_callbacks=False, **train_params):
+        """ Train GRU, but do indexing in batches
+
+            Xtrain: inputs (n, dim)
+        """
+
+        if self.inner == None:
+            print('Creating model.')
+            self.create_model()
+
+        if 'batch_size' not in train_params:
+            batch_size = 32 
+        else:
+            # A bit hacky, since we have to manually do the batching for CNN/LSTM.
+            batch_size = train_params['batch_size']
+            del train_params['batch_size']
+
+        # Generic data generator object for feeding data to fit_generator
+        def data_generator(X, idxs, bs):
+            
+            i = 0
+            while True:
+                i += bs
+
+                # Restart from beginning
+                if i + bs > len(idxs):
+                    i = 0 
+
+                X_batch = []
+                Y_batch = []
+
+                # Build the history out by sampling from the list of idxs
+                for b in range(bs):
+                    lead_idx = idxs[i+b]
+                    X_batch.append(X[lead_idx-self.params['history']:lead_idx])
+                    Y_batch.append(X[lead_idx+1])
+
+                yield (np.array(X_batch), np.array(Y_batch))
+
+        if use_callbacks:
+            train_params['callbacks'] = [
+                EarlyStopping(monitor='val_loss', patience=3, verbose=0,  min_delta=0, mode='auto', restore_best_weights=True)
+            ]
+
+        if 'validation_data' in train_params:        
+            train_params['validation_data'] = data_generator(Xfull, val_idxs, batch_size)
+
+        train_history = self.inner.fit(data_generator(Xfull, train_idxs, batch_size), **train_params)
         
         # Save losses to CSV
         if self.params['verbose'] > 0:        

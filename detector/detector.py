@@ -104,7 +104,7 @@ class ICSDetector(object):
 
             x: inputs.
         """
-        return self.inner.predict(x, **test_params)
+        return self.inner.predict(x, verbose=0, **test_params)
 
     def get_inner(self):
         """ Return the inner model

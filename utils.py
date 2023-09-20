@@ -17,6 +17,7 @@
 """
 
 import argparse
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 def normalize_array_length(arr1, arr2):
@@ -33,6 +34,60 @@ def normalize_array_length(arr1, arr2):
         return arr1, arr2
 
     return arr1, arr2        
+
+def train_val_history_idx_split(Xfull, history, train_size=0.8, shuffle=True):
+	
+	val_size = 1 - train_size
+	all_idxs = np.arange(history, len(Xfull)-1)
+	train_idxs, val_idxs, _, _ = train_test_split(all_idxs, all_idxs, test_size=val_size, random_state=42, shuffle=shuffle)	
+	return train_idxs, val_idxs
+
+
+def transform_to_window_data(dataset, target, history, target_size=1):
+		data = []
+		targets = []
+
+		start_index = history
+		end_index = len(dataset) - target_size
+
+		for i in range(start_index, end_index):
+			indices = range(i - history, i)
+			data.append(dataset[indices])
+			targets.append(target[i+target_size])
+
+		return np.array(data), np.array(targets)
+
+# Generic data generator object for feeding data
+def reconstruction_errors_by_idxs(event_detector, Xfull, idxs, history, bs=4096):
+    
+    # Length of reconstruction errors is len(X) - history. Clipped from the front.
+    full_errors = np.zeros((len(idxs), Xfull.shape[1]))
+    idx = 0
+
+    for idx in range(0, len(idxs), bs):
+        
+        Xbatch = []
+        Ybatch = []
+
+        # Build the history out by sampling from the list of idxs
+        for b in range(bs):
+            
+            if idx + b >= len(idxs):
+                break
+            
+            lead_idx = idxs[idx+b]
+            Xbatch.append(Xfull[lead_idx-history:lead_idx])
+            Ybatch.append(Xfull[lead_idx+1])
+
+        Xbatch = np.array(Xbatch)
+        Ybatch = np.array(Ybatch)
+
+        if idx + bs > len(full_errors):
+            full_errors[idx:] = (event_detector.predict(Xbatch) - Ybatch)**2                
+        else:
+            full_errors[idx:idx+bs] = (event_detector.predict(Xbatch) - Ybatch)**2
+
+    return full_errors
 
 def custom_train_test_split(dataset_name, Xtest, Ytest, test_size=0.7, shuffle=False):
 
@@ -96,7 +151,7 @@ def get_argparser():
     parser.add_argument("--gru_model_params_units", 
         default=256,
         type=int,
-        help="Number of units in hidden layers of the LSTM")
+        help="Number of units in hidden layers of the GRU")
     parser.add_argument("--gru_model_params_history", 
         default=100,
         type=int,
@@ -110,11 +165,11 @@ def get_argparser():
     parser.add_argument("--dnn_model_params_units", 
         default=64,
         type=int,
-        help="Number of units in hidden layers of the CNN")
+        help="Number of units in hidden layers of the DNN")
     parser.add_argument("--dnn_model_params_layers", 
         default=4,
         type=int,
-        help="Number of layers in the CNN")
+        help="Number of layers in the DNN")
 
     ### CNNs
     parser.add_argument("--cnn_model_params_units", 
@@ -227,7 +282,7 @@ def update_config_model(args, config, model_type, dataset_name):
 
         config.update({
             'model': {'verbose': 1}, 
-            'name': f'{model_type}-{dataset_name}' 
+            'name': f'{model_type}-{dataset_name}'
             })
 
     return

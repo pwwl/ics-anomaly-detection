@@ -35,13 +35,10 @@ from sklearn.metrics import f1_score
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
 
-from sklearn.metrics import roc_curve, precision_recall_curve
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from tensorflow.keras.models import load_model
-from main_train import load_saved_model
+from sklearn.model_selection import train_test_split
 
 # Custom packages
-from detector import autoencoder, lstm, cnn, dnn, gru
+from main_train import load_saved_model
 from data_loader import load_train_data, load_test_data
 
 import metrics  
@@ -234,7 +231,7 @@ if __name__ == "__main__":
     model_name = config['name']
     hp_metrics = args.detect_params_hp_metrics
 
-    Xtrain, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
+    Xfull, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
     Ytest = Ytest.astype(int)
     event_detector = load_saved_model(model_type, run_name, model_name)
@@ -244,13 +241,21 @@ if __name__ == "__main__":
 
     if not model_type == 'AE':
         
-        # Clip the prediction to match LSTM prediction window
-        Ytest_test = Ytest_test[event_detector.params['history'] + 1:]
-        Ytest_val = Ytest_val[event_detector.params['history'] + 1:]
+        # Clip the prediction to match prediction window
+        history = config['model']['history']
+        Ytest_test = Ytest_test[history + 1:]
+        Ytest_val = Ytest_val[history + 1:]
         do_batches = True
 
-    ##### Generate errors for cross Validation
-    validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+        all_idxs = np.arange(history, len(Xfull)-1)
+        _, val_idxs, _, _ = train_test_split(all_idxs, all_idxs, test_size=0.2, random_state=42, shuffle=True)
+        validation_errors = utils.reconstruction_errors_by_idxs(event_detector, Xfull, val_idxs, history)
+    
+    else:
+
+        _, Xval, _, _  = train_test_split(Xfull, Xfull, test_size=0.2, random_state=42, shuffle=True)
+        validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+
     Xtestval_errors = event_detector.reconstruction_errors(Xtest_val, batches=do_batches)
 
     # Final test performance

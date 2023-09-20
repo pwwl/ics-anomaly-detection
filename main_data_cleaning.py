@@ -52,9 +52,8 @@ def clean_data(dataset_name):
 	df_train = pd.read_csv("data/" + dataset_name + "/SWATv0_train.csv", dayfirst=True)
 	df_test = pd.read_csv("data/" + dataset_name + "/SWATv0_test.csv")
 
-	Xtrain, Ytrain, sensor_cols = load_train_data(dataset_name)
-	Xtest, Ytest, _ = load_test_data(dataset_name)
-	Xtest_benign = Xtest[Ytest == False]
+	_, sensor_cols = load_train_data(dataset_name)
+	_, Ytest, _ = load_test_data(dataset_name)
 
 	Xtrain_raw = df_train[sensor_cols].values
 	Xtest_raw = df_test[sensor_cols].values
@@ -65,7 +64,6 @@ def clean_data(dataset_name):
 
 	for i in range(Xtrain_raw.shape[1]):
 
-		#ks_star = compute_ks_star(Xtrain[:,i], Xtest_benign[:,i])
 		ks_star = compute_ks_star(Xtrain_raw[:,i], Xtest_raw_benign[:,i])
 		ks_values.append(ks_star)
 

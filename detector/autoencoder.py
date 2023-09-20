@@ -163,23 +163,9 @@ class AEED(ICSDetector):
         """
         detection = instance_errors > theta
 
-        # If window exceeds one, look for consective detections
+        # If window exceeds one, look for consecutive detections
         if window > 1:
-
-            # Use convolution and integer division for a rolling mean
             detection = np.convolve(detection, np.ones(window), 'same') // window
-
-            # clement: Removing this behavior
-            # Backfill the windows (e.g. if idx 255 is 1, all of 255-window:255 should be filled)
-            # fill_idxs = np.where(detection)
-            # fill_detection = detection.copy()
-
-            # # Fill for both the history and the window
-            # fill_amount = window + self.params['history']
-            # for idx in fill_idxs[0]:
-            #     fill_detection[idx - window : idx] = 1
-
-            # return fill_detection
 
         return detection
 

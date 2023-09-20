@@ -269,21 +269,30 @@ if __name__ == "__main__":
     utils.update_config_model(args, config, model_type, dataset_name)
 
     model_name = config['name']
-    _, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
+    Xfull, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
     Xtest, Ytest, _ = load_test_data(dataset_name)
 
     event_detector = load_saved_model(model_type, run_name, model_name)
     do_batches = False
 
+    print('Getting detection errors....')
+
     if not model_type == 'AE':
 
-        # Clip the prediction to match LSTM prediction window
-        Ytest = Ytest[event_detector.params['history'] + 1:]
+        # Clip the prediction to match prediction window
+        history = config['model']['history']
+        Ytest = Ytest[history + 1:]
         do_batches = True
 
-    ##### Cross Validation
-    print('Getting detection errors....')
-    validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+        all_idxs = np.arange(history, len(Xfull)-1)
+        _, val_idxs, _, _ = train_test_split(all_idxs, all_idxs, test_size=0.2, random_state=42, shuffle=True)
+        validation_errors = utils.reconstruction_errors_by_idxs(event_detector, Xfull, val_idxs, history)
+
+    else:
+
+        _, Xval, _, _  = train_test_split(Xfull, Xfull, test_size=0.2, random_state=42, shuffle=True)
+        validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+
     test_errors = event_detector.reconstruction_errors(Xtest, batches=do_batches)
 
     validation_instance_errors = validation_errors.mean(axis=1)

@@ -53,7 +53,8 @@ from data_loader import load_train_data, load_test_data
 import metrics
 import utils
 
-def train_model(model_type, config, Xtrain, Xval, dataset_name=None):
+
+def train_reconstruction_model(model_type, config, Xtrain, Xval):
 
     train_params = config['train']
     model_params = config['model']
@@ -63,7 +64,29 @@ def train_model(model_type, config, Xtrain, Xval, dataset_name=None):
 
     if model_type == 'AE':
         event_detector = autoencoder.AEED(**model_params)
-    elif model_type == 'GRU':
+    elif model_type == 'ID':
+        event_detector = identity.Identity(**model_params)
+    else:
+        print(f'Model type {model_type} is not supported.')
+        return
+
+    event_detector.create_model()
+    
+    event_detector.train(Xtrain,
+            validation_data=(Xval, Xval),
+            **train_params)
+
+    return event_detector
+
+def train_forecast_model(model_type, config, Xtrain, Xval, Ytrain, Yval):
+
+    train_params = config['train']
+    model_params = config['model']
+
+    # define model input size parameter --- needed for AE size
+    model_params['nI'] = Xtrain.shape[2]
+
+    if model_type == 'GRU':
         event_detector = gru.GatedRecurrentUnit(**model_params)
     elif model_type == 'LSTM':
         event_detector = lstm.LongShortTermMemory(**model_params)
@@ -76,33 +99,72 @@ def train_model(model_type, config, Xtrain, Xval, dataset_name=None):
     elif model_type == 'ID':
         event_detector = identity.Identity(**model_params)
     else:
-        raise SystemExit(f'Model type {model_type} is not supported.')
+        print(f'Model type {model_type} is not supported.')
+        return
 
-    event_detector.create_model()    
-    event_detector.train(Xtrain,
-            validation_data=(Xval, Xval),
+    event_detector.create_model()
+    
+    event_detector.train(Xtrain, Ytrain,
+            validation_data=(Xval, Yval),
             **train_params)
 
     return event_detector
 
-def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name, test_split=0.7, run_name='results', verbose=1):
+def train_forecast_model_by_idxs(model_type, config, Xfull, train_idxs, val_idxs):
+
+    train_params = config['train']
+    model_params = config['model']
+
+    # define model input size parameter --- needed for AE size
+    model_params['nI'] = Xfull.shape[1]
+
+    if model_type == 'GRU':
+        event_detector = gru.GatedRecurrentUnit(**model_params)
+    elif model_type == 'LSTM':
+        event_detector = lstm.LongShortTermMemory(**model_params)
+    elif model_type == 'DNN':
+        event_detector = dnn.DeepNN(**model_params)
+    elif model_type == 'CNN':
+        event_detector = cnn.ConvNN(**model_params)
+    elif model_type == 'LIN':
+        event_detector = linear.Linear(**model_params)
+    elif model_type == 'ID':
+        event_detector = identity.Identity(**model_params)
+    else:
+        print(f'Model type {model_type} is not supported.')
+        return
+
+    event_detector.create_model()
+    
+    event_detector.train_by_idx(Xfull, train_idxs, val_idxs,
+            validation_data=True,
+            **train_params)
+
+    return event_detector
+
+def hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name, val_idxs=None, test_split=0.7, run_name='results', verbose=1):
 
     model_name = config['name']
     do_batches = False
 
     Ytest = Ytest.astype(int)
     Xtest_val, Xtest_test, Ytest_val, Ytest_test = utils.custom_train_test_split(dataset_name, Xtest, Ytest, test_size=test_split, shuffle=False)
-    #Xtest_val, Xtest_test, Ytest_val, Ytest_test = train_test_split(Xtest, Ytest, test_size=test_split, shuffle=False)
 
     if not model_type == 'AE':
 
+        history = event_detector.params['history']
+
         # Clip the prediction to match LSTM prediction window
-        Ytest_test = Ytest_test[event_detector.params['history'] + 1:]
-        Ytest_val = Ytest_val[event_detector.params['history'] + 1:]
+        Ytest_test = Ytest_test[history + 1:]
+        Ytest_val = Ytest_val[history + 1:]
         do_batches = True
 
     ##### Cross Validation
-    validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+    if val_idxs is None:
+        validation_errors = event_detector.reconstruction_errors(Xval, batches=do_batches)
+    else:
+        validation_errors = utils.reconstruction_errors_by_idxs(event_detector, Xval, val_idxs, history)
+    
     test_errors = event_detector.reconstruction_errors(Xtest_val, batches=do_batches)
     test_instance_errors = test_errors.mean(axis=1)
 
@@ -262,6 +324,8 @@ def load_saved_model(model_type, run_name, model_name):
 
     if model_type == 'AE':
         event_detector = autoencoder.AEED(**model_params)
+    elif model_type == 'GRU':
+        event_detector = gru.GatedRecurrentUnit(**model_params)
     elif model_type == 'CNN':
         event_detector = cnn.ConvNN(**model_params)
     elif model_type == 'DNN':
@@ -372,25 +436,42 @@ if __name__ == "__main__":
     utils.update_config_model(args, config, model_type, dataset_name)
     model_name = config['name']
 
-    Xtrain, Xval, sensor_cols = load_train_data(dataset_name, train_shuffle=True)
+    Xfull, sensor_cols = load_train_data(dataset_name)
     Xtest, Ytest, _ = load_test_data(dataset_name)
+
+    shuffle = True
+    by_idx = True
 
     # Updates training parameters such as batch size, learning rate, etc.
     if model_type == 'AE':
         config.update({'train': ae_train_params})
-    else:
-        large_train_params['steps_per_epoch'] = len(Xtrain) // large_train_params['batch_size']
-        large_train_params['validation_steps'] = len(Xval) // large_train_params['batch_size']
-        config.update({'train': large_train_params})
+        Xtrain, Xval, _, _  = train_test_split(Xfull, Xfull, test_size=0.2, random_state=42, shuffle=True)
+        event_detector = train_reconstruction_model(model_type, config, Xtrain, Xval)
 
-    # Trains and returns the inner event detection model
-    event_detector = train_model(model_type, config, Xtrain, Xval, dataset_name)
+        # Search for the best tuning of the window and theta parameters
+        hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name,
+            test_split=test_split,
+            run_name=run_name,
+            verbose=0)
+
+    else:
+
+        history = config['model']['history']
     
-    # Search for the best tuning of the window and theta parameters
-    hyperparameter_search(event_detector, model_type, config, Xval, Xtest, Ytest, dataset_name,
-        test_split=test_split,
-        run_name=run_name,
-        verbose=0)
+        train_idxs, val_idxs = utils.train_val_history_idx_split(Xfull, history)
+
+        large_train_params['steps_per_epoch'] = len(train_idxs) // large_train_params['batch_size']
+        large_train_params['validation_steps'] = len(val_idxs) // large_train_params['batch_size']
+        config.update({'train': large_train_params})
+        
+        event_detector = train_forecast_model_by_idxs(model_type, config, Xfull, train_idxs, val_idxs)
+
+        # Search for the best tuning of the window and theta parameters
+        hyperparameter_search(event_detector, model_type, config, Xfull, val_idxs, Xtest, Ytest, dataset_name,
+            val_idxs=val_idxs,
+            test_split=test_split,
+            run_name=run_name,
+            verbose=0)
 
     save_model(event_detector, config, run_name=run_name)
 

@@ -92,10 +92,7 @@ def load_train_data(dataset_name, scaler=None, train_shuffle=True, no_transform=
         if verbose:
             print('Saved scaler parameters to {}.'.format('scaler.pkl'))
 
-    # split into training and validation
-    Xtrain, Xval, _, _  = train_test_split(X, X, test_size=0.2, random_state=42, shuffle=train_shuffle)
-
-    return Xtrain.values, Xval.values, sensor_cols
+    return X.values, sensor_cols
 
 def load_test_data(dataset_name, scaler=None, no_transform=False, verbose=False):
 
